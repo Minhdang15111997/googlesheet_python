@@ -1,0 +1,18 @@
+SELECT platform , order_creation_date_timestamp , order_status , shop_sku , product_id, B.Barcode , product_name , 
+item_sold, 
+CASE 
+WHEN (CASE WHEN platform  = "Lazada" THEN (unit_price - (seller_promo/item_sold) - seller_bundle_discount) ELSE ((gross_order_value  - seller_voucher_promo)/item_sold) END) >= 0 
+THEN (CASE WHEN platform  = "Lazada" THEN (unit_price - (seller_promo/item_sold) - seller_bundle_discount) ELSE ((gross_order_value - seller_voucher_promo)/item_sold) END) 
+ELSE 0 END AS Paid_price,
+unit_price,
+(CASE 
+WHEN (CASE WHEN platform  = "Lazada" THEN (unit_price - (seller_promo/item_sold) - seller_bundle_discount) ELSE ((gross_order_value  - seller_voucher_promo)/item_sold) END) >= 0 
+THEN (CASE WHEN platform  = "Lazada" THEN (unit_price - (seller_promo/item_sold) - seller_bundle_discount) ELSE ((gross_order_value - seller_voucher_promo)/item_sold) END) 
+ELSE 0 END)*item_sold AS "Invoice_value"
+FROM intrepid_bi.bi_order_item AS A
+LEFT JOIN bi_vn.Triumph AS B 
+ON A.product_id = B.`Seller SKU`
+WHERE pws_shop_be_id IN (29396,29398,29399,103463) 
+AND ((order_creation_date >= CURDATE() - INTERVAL 1 DAY AND HOUR(order_creation_date_timestamp) >= 9) 
+OR (order_creation_date >= CURDATE() AND HOUR(order_creation_date_timestamp) < 9))
+AND order_status NOT IN ("returned", "rejected", "refund", "order_expired", "failed", "cancelled");
